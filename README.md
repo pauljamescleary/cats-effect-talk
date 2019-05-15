@@ -407,7 +407,44 @@ Compare and contrast [src/test/scala/futures/PetService](Futures PetService) wit
 **Your application is already largely synchronous!!**
 If you are using for comprehensions, map, flatMap with `Future`, your program is already synchronous.  There is no need to be executing all these things on a separate thread pool.
 
+If you are using monadic sequencing, this is synchronous.
+
+* [Future Sequencing](https://github.com/pauljamescleary/cats-effect-talk/blob/master/src/test/scala/FutureSpec.scala#L18)
+* [IO Sequencing](https://github.com/pauljamescleary/cats-effect-talk/blob/6be42f6ea73613280509a75f2bbe34b26cf5d3bd/src/test/scala/IOSpec.scala#L14)
+
 **No more unexpected timeout errors in your tests**
-If you have seen seemingly sporadic timeout errors in your tests, they can be difficult to stomp out, and usually involve increasing the timeout to a possibly ridiculous value.
+If you are using ScalaTest for example with ScalaFutures, you might have code that looks as follows:
+
+```scala
+  def myFuture(message: String): Future[String] = Future {
+    Thread.sleep(1000)
+    println(s"Completed at ${Instant.now}")
+    message
+  }
+
+  "The future" should {
+    "be ready" in {
+      whenReady(myFuture("hey")) { msg =>
+        msg shouldBe "hey"
+      }
+    }
+  }
+```
+
+If you have seen seemingly sporadic timeout errors in your tests, they can be difficult to stomp out, and usually involve increasing the timeout to a possibly ridiculous value (or rebuilding and crossing fingers).
 
 With `IO`, all your tests can safely just `.unsafeRunSync`, not more unpredictable timeouts!
+
+```scala
+  def myIO(message: String): IO[String] = IO {
+    Thread.sleep(1000)
+    println(s"Completed at ${Instant.now}")
+    message
+  }
+
+  "The io" should {
+    "be ready" in {
+      myIO("hey").unsafeRunSync shouldBe "hey"
+    }
+  }
+```
